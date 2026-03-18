@@ -31,4 +31,4 @@ This is my repo for **STATS 220**.
 
 A meme that captures how I currently feel about my university studies:
 
-![](https://media1.tenor.com/m/UkLbj8DlI3gAAAAd/gfl-gfl2.gif)
+![](https://c.tenor.com/UkLbj8DlI3gAAAAd/tenor.gif)
