@@ -1,0 +1,126 @@
+---
+title: My dynamic report
+output: html_fragment
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, error=FALSE)
+library(tidyverse)
+```
+
+```{css}
+body {
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  color: #2c3e50;
+}
+
+p {
+  line-height: 1.6;
+}
+```
+
+## FFXIV Player Behaviour and Content Engagement
+This report explores how players engage with Final Fantasy XIV, focusing on play style (solo vs group), time spent in-game, preferred regions, login times, and the types of content players engage in.
+
+```{r}
+logged_data <- read_csv(
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmLR9YNtIFLA77OEYhem6iBzMJNcv9EgSl3hkWze5qoX7pIFhxFYy9tu71w-oW3dyPcy_eBbtVLDb8/pub?output=csv"
+)
+
+latest_data <- logged_data %>%
+  rename(
+    login_time   = `When do you most often log onto the game?`,
+    content_type = `Which of the following types of content do you most commonly engage in? (This should be something you do regularly, such as participating in a static for raiding)`,
+    region       = `Which region do you play in the most? (This includes things like if you DC travel to Materia, or have an alt account on Light DC etc.)`,
+    hours_daily  = `How many hours do you spend on the game daily?`,
+    play_style   = `Do you play more often as a solo or in a group?`
+  ) %>%
+  mutate(hours_daily = as.numeric(hours_daily))
+
+avg_hours <- latest_data %>%
+  group_by(play_style) %>%
+  summarise(avg_hours = round(mean(hours_daily, na.rm = TRUE), 1))
+
+top_region <- latest_data %>%
+  count(region, sort = TRUE) %>%
+  slice(1)
+
+top_login <- latest_data %>%
+  count(login_time, sort = TRUE) %>%
+  slice(1)
+
+solo_avg <- avg_hours %>%
+  filter(play_style == "Solo") %>%
+  pull(avg_hours)
+
+group_avg <- avg_hours %>%
+  filter(play_style == "Group") %>%
+  pull(avg_hours)
+
+comment_1 <- paste0(
+  "Players who play in groups spend an average of ",
+  group_avg,
+  " hours per day, compared to ",
+  solo_avg,
+  " hours per day for solo players."
+)
+
+comment_2 <- paste0(
+  "The most common region is ",
+  top_region$region,
+  ", and the most popular login time is ",
+  top_login$login_time,
+  "."
+)
+
+cat(comment_1, "\n\n", comment_2)
+
+# ---- Content types ----
+content_data <- latest_data %>%
+  separate_rows(content_type, sep = ", ") %>%
+  count(play_style, content_type)
+
+ggplot(content_data, aes(x = content_type, y = n, fill = play_style)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "Content Types by Play Style",
+    x = "Content Type",
+    y = "Number of Players",
+    fill = "Play Style"
+  ) +
+  theme_minimal()
+
+# ---- Region chart ----
+region_data <- latest_data %>%
+  count(play_style, region)
+
+ggplot(region_data, aes(x = region, y = n, fill = play_style)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "Player Regions by Play Style",
+    x = "Region",
+    y = "Number of Players",
+    fill = "Play Style"
+  ) +
+  theme_minimal()
+  
+# ---- Login time chart ----
+login_data <- latest_data %>%
+  count(play_style, login_time)
+
+ggplot(login_data, aes(x = login_time, y = n, fill = play_style)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "Login Times by Play Style",
+    x = "Login Time",
+    y = "Number of Players",
+    fill = "Play Style"
+  ) +
+  theme_minimal()
+```
